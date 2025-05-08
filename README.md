@@ -19,7 +19,7 @@ This repo is designed to reinforce concepts, test understanding, and help others
 
 | Topic | Type | Link |
 |-------|------|------|
-| Sentiment Analysis with Logistic Regression | Quiz | [sentiment_analysis_quiz.md](quizzes/sentiment_analysis_quiz.md) |
+| Sentiment Analysis with Logistic Regression | Quiz |https://github.com/shantitamang21/mlbasicquizzes/blob/main/sentiment_analysis_quiz.md |
 | CountVectorizer & Text Preprocessing | Notes | [vectorization_notes.md](notes/vectorization_notes.md) |
 | Confusion Matrix & Evaluation | Quiz | [confusion_matrix_quiz.md](quizzes/confusion_matrix_quiz.md) |
 | Logistic Regression (Beginner Level) | Notes | [logistic_regression_notes.md](notes/logistic_regression_notes.md) |
