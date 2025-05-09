@@ -3,6 +3,11 @@
 
 Welcome to my personal collection of **Machine Learning quizzes, notes, and mini-checkpoints**.  
 This repo is designed to reinforce concepts, test understanding, and help others who are also learning ML.
+Here are some links that I use to study the concepts related to ML:
+https://ocdevel.com/mlg/resources
+https://huyenchip.com/mlops/
+https://jalammar.github.io/visual-interactive-guide-basics-neural-networks/
+https://youtu.be/aircAruvnKk?si=fdyDLwrvhYAYix8H
 
 ---
 
