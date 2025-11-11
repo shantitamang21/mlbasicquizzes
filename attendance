@@ -1,0 +1,662 @@
+import React from "react";
+import { useState, useEffect } from "react";
+import "./TeamGenerator.css";
+
+type Team = string[];
+type Teams = Team[];
+
+function parseTextToNames(text: string): string[] {
+  const raw = text
+    .split(/[\r\n,]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const seen = new Set<string>();
+  const names: string[] = [];
+  for (const n of raw) {
+    const key = n.toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      names.push(n);
+    }
+  }
+  return names;
+}
+
+function splitCsvLine(line: string): string[] {
+  const cells: string[] = [];
+  let cur = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === "," && !inQuotes) {
+      cells.push(cur.trim());
+      cur = "";
+    } else {
+      cur += ch;
+    }
+  }
+  cells.push(cur.trim());
+  return cells;
+}
+
+function parseCsvToNames(csv: string, colIdx: number | null = null, dropHeader = true): string[] {
+  const lines = csv.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (!lines.length) return [];
+  let useCol = colIdx ?? -1;
+  const start = dropHeader ? 1 : 0;
+  if (useCol < 0) {
+    const probe = splitCsvLine(lines[0]);
+    useCol =
+      Math.max(
+        probe.findIndex((c) => /[a-z]/i.test(c) && /\s/.test(c)),
+        probe.findIndex((c) => /[a-z]/i.test(c))
+      );
+    if (useCol < 0) useCol = 0;
+  }
+  const raw: string[] = [];
+  for (let i = start; i < lines.length; i++) {
+    const cells = splitCsvLine(lines[i]);
+    if (useCol < cells.length) {
+      const v = cells[useCol].trim();
+      if (v) raw.push(v);
+    }
+  }
+  const seen = new Set<string>();
+  const names: string[] = [];
+  for (const n of raw) {
+    const key = n.toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      names.push(n);
+    }
+  }
+  return names;
+}
+
+function makeRng(seedStr: string) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < seedStr.length; i++) {
+    h ^= seedStr.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  let x = h || 123456789;
+  return () => {
+    x ^= x << 13;
+    x ^= x >>> 17;
+    x ^= x << 5;
+    return (x >>> 0) / 4294967296;
+  };
+}
+
+function shuffle<T>(arr: T[], rng: () => number): T[] {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function dealIntoTeams(names: string[], size: number): string[][] {
+  const teamCount = Math.max(1, Math.ceil(names.length / size));
+  const teams = Array.from({ length: teamCount }, () => [] as string[]);
+  let t = 0;
+  for (const n of names) {
+    teams[t].push(n);
+    t = (t + 1) % teamCount;
+  }
+  return teams;
+}
+
+export default function TeamGenerator(): JSX.Element {
+  const colors = ["primary", "success", "warning", "info", "secondary", "danger"];
+
+  const [inputNames, setInputNames] = useState<string>("");
+  const [teamSizeStr, setTeamSizeStr] = useState<string>("2");
+  const [madeTeams, setMadeTeams] = useState<Teams>([]);
+  const [message, setMessage] = useState<string>("");
+
+  const [fileMessage, setFileMessage] = useState<string>("");
+  const [csvDropHeader, setCsvDropHeader] = useState<boolean>(true);
+  const [csvColumn, setCsvColumn] = useState<string>("");
+
+  const [seed, setSeed] = useState<string>(() => localStorage.getItem("tg_seed") || String(Date.now()));
+  const [historyCount, setHistoryCount] = useState<number>(() => Number(localStorage.getItem("tg_historyCount") || "0"));
+
+  const [studentText, setStudentText] = useState("Alice,Bob,Charlie");
+  const [pickedStudent, setPickedStudent] = useState("");
+  const [studentList, setStudentList] = useState<string[]>([]);
+
+  const [spFileMsg, setSpFileMsg] = useState<string>("");
+  const [spCsvDropHeader, setSpCsvDropHeader] = useState<boolean>(true);
+  const [spCsvColumn, setSpCsvColumn] = useState<string>("");
+
+  const [tgLastFileText, setTgLastFileText] = useState<string>("");
+  const [tgLastIsCsv, setTgLastIsCsv] = useState<boolean>(false);
+  const [spLastFileText, setSpLastFileText] = useState<string>("");
+  const [spLastIsCsv, setSpLastIsCsv] = useState<boolean>(false);
+
+  useEffect(() => {
+    const savedInput = localStorage.getItem("tg_inputNames");
+    const savedSize = localStorage.getItem("tg_teamSizeStr");
+    const savedTeams = localStorage.getItem("tg_madeTeams");
+    if (savedInput) setInputNames(savedInput);
+    if (savedSize) setTeamSizeStr(savedSize);
+    if (savedTeams) setMadeTeams(JSON.parse(savedTeams));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("tg_inputNames", inputNames);
+  }, [inputNames]);
+
+  useEffect(() => {
+    localStorage.setItem("tg_teamSizeStr", teamSizeStr);
+  }, [teamSizeStr]);
+
+  useEffect(() => {
+    localStorage.setItem("tg_madeTeams", JSON.stringify(madeTeams));
+  }, [madeTeams]);
+
+  useEffect(() => {
+    localStorage.setItem("tg_seed", seed);
+  }, [seed]);
+
+  useEffect(() => {
+    localStorage.setItem("tg_historyCount", String(historyCount));
+  }, [historyCount]);
+
+  useEffect(() => {
+    if (!tgLastFileText) return;
+    try {
+      let names: string[] = [];
+      if (tgLastIsCsv) {
+        const col = csvColumn.trim() === "" ? null : Number(csvColumn);
+        if (col !== null && Number.isNaN(col)) return;
+        names = parseCsvToNames(tgLastFileText, col, csvDropHeader);
+      } else {
+        names = parseTextToNames(tgLastFileText);
+      }
+      if (names.length) setInputNames(names.join("\n"));
+    } catch {}
+  }, [csvDropHeader, csvColumn, tgLastFileText, tgLastIsCsv]);
+
+  useEffect(() => {
+    if (!spLastFileText) return;
+    try {
+      let names: string[] = [];
+      if (spLastIsCsv) {
+        const col = spCsvColumn.trim() === "" ? null : Number(spCsvColumn);
+        if (col !== null && Number.isNaN(col)) return;
+        names = parseCsvToNames(spLastFileText, col, spCsvDropHeader);
+      } else {
+        names = parseTextToNames(spLastFileText);
+      }
+      if (names.length) {
+        setStudentText(names.join("\n"));
+        setStudentList(names);
+        setPickedStudent("");
+      }
+    } catch {}
+  }, [spCsvDropHeader, spCsvColumn, spLastFileText, spLastIsCsv]);
+
+  const handleMakeTeams = () => {
+    setMessage("");
+    const names = parseTextToNames(inputNames);
+    if (names.length === 0) {
+      setMessage("Please type or load at least one valid name.");
+      setMadeTeams([]);
+      return;
+    }
+    const size = parseInt(teamSizeStr, 10);
+    if (isNaN(size) || size <= 0) {
+      setMessage("Team size should be a positive number (e.g., 2 or 3).");
+      setMadeTeams([]);
+      return;
+    }
+    const rng = makeRng(`${seed}:${historyCount}`);
+    const shuffled = shuffle(names, rng);
+    const newTeams = dealIntoTeams(shuffled, size);
+    setMadeTeams(newTeams);
+    setMessage("Teams created at " + new Date().toLocaleTimeString());
+    setHistoryCount((c) => c + 1);
+  };
+
+  const handleClear = () => {
+    setInputNames("");
+    setTeamSizeStr("2");
+    setMadeTeams([]);
+    setMessage("Cleared.");
+  };
+
+  function handleLoad() {
+    const namesArray = parseTextToNames(studentText);
+    setStudentList(namesArray);
+    setPickedStudent("");
+  }
+
+  function handlePick() {
+    if (!studentList.length) return;
+    const randomIndex = Math.floor(Math.random() * studentList.length);
+    const chosen = studentList[randomIndex];
+    setPickedStudent(chosen);
+    setStudentList(studentList.filter((n) => n !== chosen));
+  }
+
+  return (
+    <div className="container py-4">
+      <h2 className="h3 mb-3">Team Generator</h2>
+
+      <div className="mb-3">
+        <label className="form-label">Load Names from File (.txt or .csv)</label>
+        <div className="d-flex flex-wrap gap-2 align-items-center">
+          <input
+            type="file"
+            accept=".txt,.csv,text/plain,text/csv"
+            className="form-control"
+            onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
+              setFileMessage("");
+              const file = e.target.files?.[0];
+              if (!file) return;
+              if (file.size > 2 * 1024 * 1024) {
+                setFileMessage("File too large (max 2MB).");
+                return;
+              }
+              try {
+                const text = await file.text();
+                const isCsv = /\.csv$/i.test(file.name) || file.type.includes("csv");
+                let names: string[] = [];
+                if (isCsv) {
+                  const col = csvColumn.trim() === "" ? null : Number(csvColumn);
+                  if (col !== null && Number.isNaN(col)) {
+                    setFileMessage("Column index must be a number if provided.");
+                    return;
+                  }
+                  names = parseCsvToNames(text, col, csvDropHeader);
+                } else {
+                  names = parseTextToNames(text);
+                }
+                if (names.length === 0) {
+                  setFileMessage("No names found in file.");
+                  return;
+                }
+                setInputNames(names.join("\n"));
+                setMessage(`Loaded ${names.length} names from ${file.name}`);
+                setTgLastFileText(text);
+                setTgLastIsCsv(isCsv);
+              } catch {
+                setFileMessage("Failed to read or parse the file.");
+              }
+            }}
+          />
+          <div className="form-check ms-2">
+            <input
+              id="csvHeader"
+              className="form-check-input"
+              type="checkbox"
+              checked={csvDropHeader}
+              onChange={(e) => setCsvDropHeader(e.target.checked)}
+            />
+            <label htmlFor="csvHeader" className="form-check-label">
+              CSV has header row
+            </label>
+          </div>
+          <div className="d-flex align-items-center ms-2">
+            <label htmlFor="csvCol" className="form-label me-2 mb-0">
+              Column
+            </label>
+            <input
+              id="csvCol"
+              type="number"
+              min={0}
+              className="form-control"
+              style={{ width: 90 }}
+              placeholder="auto"
+              value={csvColumn}
+              onChange={(e) => setCsvColumn(e.target.value)}
+              title="Optional CSV column index (0-based). Leave empty to auto-detect."
+            />
+          </div>
+        </div>
+        {fileMessage && <div className="alert alert-warning mt-2 py-2">{fileMessage}</div>}
+      </div>
+
+      <div className="mb-3">
+        <label htmlFor="names" className="cform-label container_title">
+          Names (comma or new line)
+        </label>
+        <textarea
+          id="names"
+          className="form-control"
+          rows={6}
+          placeholder={"Alice\nBob\nCharlie, Dana"}
+          value={inputNames}
+          onChange={(e) => setInputNames(e.target.value)}
+        />
+      </div>
+
+      <div className="row g-3 align-items-end mb-3">
+        <div className="col-sm-6 col-md-4">
+          <label htmlFor="size" className="form-label">
+            Team Size
+          </label>
+          <input
+            id="size"
+            type="number"
+            className="form-control"
+            min={1}
+            value={teamSizeStr}
+            onChange={(e) => setTeamSizeStr(e.target.value)}
+          />
+        </div>
+
+        <div className="col-sm-6 col-md-8 d-flex flex-wrap gap-2">
+          <button className="btn btn-primary" onClick={handleMakeTeams} disabled={!inputNames.trim()}>
+            Make Teams
+          </button>
+          <button className="btn btn-outline-secondary" onClick={handleClear}>
+            Clear
+          </button>
+          <button
+            className="btn btn-outline-warning"
+            onClick={() => {
+              setHistoryCount(0);
+              setSeed(String(Date.now()));
+              setMessage("Randomization history reset.");
+            }}
+          >
+            Reset RNG
+          </button>
+          <button
+            className="btn btn-outline-primary"
+            onClick={() => {
+              if (!inputNames.trim()) {
+                setMessage("Add or load names first.");
+                return;
+              }
+              setHistoryCount((c) => c + 1);
+              handleMakeTeams();
+            }}
+          >
+            Shuffle again
+          </button>
+          <button
+            className="btn btn-outline-success"
+            onClick={() => {
+              if (madeTeams.length === 0) {
+                setMessage("No teams to copy");
+                return;
+              }
+              const text = madeTeams
+                .map((team, i) => `Team ${i + 1}: ${team.join(", ")}`)
+                .join("\n");
+              navigator.clipboard.writeText(text);
+              setMessage("Teams copied to clipboard!");
+            }}
+            disabled={madeTeams.length === 0}
+          >
+            Copy Teams
+          </button>
+          <button
+            className="btn btn-outline-info"
+            onClick={() => {
+              if (madeTeams.length === 0) {
+                setMessage("No teams to download");
+                return;
+              }
+              const csvRows = madeTeams.map((team, i) => `Team ${i + 1},${team.join(",")}`);
+              const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "teams.csv";
+              a.click();
+              URL.revokeObjectURL(url);
+              setMessage("CSV file downloaded!");
+            }}
+            disabled={madeTeams.length === 0}
+          >
+            Download CSV
+          </button>
+          <button
+            className="btn btn-outline-dark"
+            onClick={() => {
+              if (madeTeams.length === 0) {
+                setMessage("No teams to export");
+                return;
+              }
+              const payload = {
+                generatedAt: new Date().toISOString(),
+                teamSize: teamSizeStr,
+                teams: madeTeams,
+              };
+              const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "teams.json";
+              a.click();
+              URL.revokeObjectURL(url);
+              setMessage("JSON exported!");
+            }}
+            disabled={madeTeams.length === 0}
+          >
+            Export JSON
+          </button>
+          <label className="btn btn-outline-secondary mb-0">
+            Import JSON
+            <input
+              type="file"
+              accept="application/json"
+              hidden
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                try {
+                  const text = await file.text();
+                  const data = JSON.parse(text);
+                  if (Array.isArray(data.teams)) {
+                    setMadeTeams(data.teams);
+                    if (data.teamSize) setTeamSizeStr(String(data.teamSize));
+                    setMessage("JSON imported.");
+                  } else {
+                    setMessage("Invalid JSON format.");
+                  }
+                } catch {
+                  setMessage("Failed to import JSON.");
+                }
+              }}
+            />
+          </label>
+        </div>
+      </div>
+
+      {message && (
+        <div className="alert alert-info py-2" role="alert">
+          {message}
+        </div>
+      )}
+
+      {madeTeams.length > 0 && (
+        <>
+          <p className="text-muted">Total Teams: {madeTeams.length}</p>
+          <div className="mt-3">
+            <p className="text-muted">
+              Total Members: {madeTeams.reduce((sum, t) => sum + t.length, 0)}
+            </p>
+            <h2 className="h5 mb-3">Result</h2>
+            <div className="row g-3">
+              {madeTeams.map((team, i) => (
+                <div className="col-md-6 col-lg-4" key={i}>
+                  <div className={`card border border-${colors[i % colors.length]} mb-3`}>
+                    <div className="card-body">
+                      <h3 className="card-title h6 mb-3">Team {i + 1}</h3>
+                      {team.length === 0 ? (
+                        <p className="text-muted mb-0">No members</p>
+                      ) : (
+                        <ul className="mb-0">
+                          {team.map((name, j) => (
+                            <li key={j}>{name}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      <hr className="my-4" />
+      <div className="py-4">
+        <h2 className="h3 mb-3">Random Student Picker</h2>
+
+        <div className="mb-3">
+          <label className="form-label">Load Students from File (.txt or .csv)</label>
+          <div className="d-flex flex-wrap gap-2 align-items-center">
+            <input
+              type="file"
+              accept=".txt,.csv,text/plain,text/csv"
+              className="form-control"
+              onChange={async (e) => {
+                setSpFileMsg("");
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (file.size > 2 * 1024 * 1024) {
+                  setSpFileMsg("File too large (max 2MB).");
+                  return;
+                }
+                try {
+                  const text = await file.text();
+                  const isCsv = /\.csv$/i.test(file.name) || file.type.includes("csv");
+                  let names: string[] = [];
+                  if (isCsv) {
+                    const col = spCsvColumn.trim() === "" ? null : Number(spCsvColumn);
+                    if (col !== null && Number.isNaN(col)) {
+                      setSpFileMsg("Column index must be a number if provided.");
+                      return;
+                    }
+                    names = parseCsvToNames(text, col, spCsvDropHeader);
+                  } else {
+                    names = parseTextToNames(text);
+                  }
+                  if (names.length === 0) {
+                    setSpFileMsg("No names found in the file.");
+                    return;
+                  }
+                  setStudentText(names.join("\n"));
+                  setStudentList(names);
+                  setPickedStudent("");
+                  setSpLastFileText(text);
+                  setSpLastIsCsv(isCsv);
+                  setSpFileMsg(`Loaded ${names.length} students from ${file.name}`);
+                } catch {
+                  setSpFileMsg("Failed to read or parse the file.");
+                }
+              }}
+            />
+            <div className="form-check ms-2">
+              <input
+                id="spCsvHeader"
+                className="form-check-input"
+                type="checkbox"
+                checked={spCsvDropHeader}
+                onChange={(e) => setSpCsvDropHeader(e.target.checked)}
+              />
+              <label htmlFor="spCsvHeader" className="form-check-label">
+                CSV has header row
+              </label>
+            </div>
+            <div className="d-flex align-items-center ms-2">
+              <label htmlFor="spCsvCol" className="form-label me-2 mb-0">
+                Column
+              </label>
+              <input
+                id="spCsvCol"
+                type="number"
+                min={0}
+                className="form-control"
+                style={{ width: 90 }}
+                placeholder="auto"
+                value={spCsvColumn}
+                onChange={(e) => setSpCsvColumn(e.target.value)}
+                title="Optional CSV column index (0-based). Leave empty to auto-detect."
+              />
+            </div>
+          </div>
+          {spFileMsg && <div className="alert alert-warning mt-2 py-2">{spFileMsg}</div>}
+        </div>
+
+        <label htmlFor="studentText" className="form-label">
+          Names (comma or new line)
+        </label>
+        <textarea
+          id="studentText"
+          className="form-control mb-3"
+          rows={5}
+          placeholder="Alice, Bob, Charlie"
+          value={studentText}
+          onChange={(e) => setStudentText(e.target.value)}
+        />
+
+        <div className="d-flex gap-2 mt-2 flex-wrap">
+          <button className="btn btn-primary" onClick={handleLoad}>
+            Load
+          </button>
+          <button className="btn btn-success" onClick={handlePick} disabled={!studentList.length}>
+            Pick
+          </button>
+          <button
+            className="btn btn-outline-secondary"
+            onClick={() => {
+              setStudentList([]);
+              setPickedStudent("");
+            }}
+          >
+            Clear List
+          </button>
+          <button
+            className="btn btn-outline-info"
+            onClick={() => {
+              if (!studentList.length) return;
+              const text = studentList.join("\n");
+              navigator.clipboard.writeText(text);
+            }}
+            disabled={!studentList.length}
+          >
+            Copy Remaining
+          </button>
+        </div>
+
+        {pickedStudent && (
+          <p className="alert alert-info mt-3">
+            Picked: <b>{pickedStudent}</b>
+          </p>
+        )}
+
+        {studentList.length > 0 && (
+          <div className="mt-3">
+            <h5 className="h6">Remaining Students:</h5>
+            <ul className="mb-0">
+              {studentList.map((name, idx) => (
+                <li key={idx}>{name}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      <p className="text-center text-muted mt-4 small">
+        Built by Shanti Tamang • For learning React 💻
+      </p>
+    </div>
+  );
+}
