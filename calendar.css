@@ -1,0 +1,201 @@
+.cal-wrap {
+  padding: 32px;
+  background: #f5f7fb;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cal-hero {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.1);
+}
+
+.cal-hero-text {
+  flex: 1 1 260px;
+}
+
+.cal-eyebrow {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+
+.cal-heading {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.cal-subtitle {
+  margin-top: 8px;
+  color: #4b5563;
+  max-width: 520px;
+}
+
+.cal-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  flex: 1 1 220px;
+}
+
+.cal-stat {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+.cal-stat-label {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #6b7280;
+  letter-spacing: 0.04em;
+}
+
+.cal-stat-value {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.cal-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  border-radius: 14px;
+  padding: 16px 20px;
+  border: 1px solid #e5e7eb;
+}
+
+.cal-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cal-toolbar-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: #ffffff;
+  font-weight: 500;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(17, 24, 39, 0.08);
+}
+
+.btn-clear {
+  background-color: #fff1f2;
+  border-color: #fecdd3;
+  color: #b91c1c;
+}
+
+.btn-today {
+  background-color: #e0f2fe;
+  border-color: #bae6fd;
+  color: #0369a1;
+}
+
+.btn-primary {
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  color: white;
+  border: none;
+}
+
+.cal-filter-label {
+  font-size: 0.85rem;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.cal-filter {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  min-width: 160px;
+}
+
+.cal-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  background-color: #f8f9fb;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  font-size: 0.9rem;
+}
+
+.cal-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #4b5563;
+}
+
+.cal-legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.cal-legend-dot.status-available {
+  background: #43a047;
+}
+
+.cal-legend-dot.status-booked {
+  background: #f6c343;
+}
+
+.cal-legend-dot.status-pending {
+  background: #fb923c;
+}
+
+.fc {
+  background: white;
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+.fc .fc-daygrid-day.fc-day-today {
+  background-color: #eef2ff !important;
+}
+
+.fc .fc-timegrid-col.fc-day-today {
+  background-color: #eef2ff66 !important;
+}
+
+.fc-toolbar.fc-header-toolbar {
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
